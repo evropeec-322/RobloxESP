@@ -1,67 +1,82 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local ESPEnabled = false
+-- Настройки ESP
+getgenv().espEnabled = true
+getgenv().lineEnabled = true
+getgenv().lineColor = Color3.fromRGB(255, 0, 0)  -- Красная линия
 
--- Функция для создания ESP
-local function CreateESP(player)
-    if player ~= LocalPlayer and player.Character then
-        local highlight = Instance.new("Highlight")
-        highlight.Parent = player.Character
-        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Красный цвет
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Белая обводка
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
+-- Функция рисования линии к игроку
+function drawLineToPlayer(player)
+    local camera = game.Workspace.CurrentCamera
+    local playerChar = player.Character
+    if playerChar and playerChar:FindFirstChild("HumanoidRootPart") then
+        local humanoidRootPart = playerChar.HumanoidRootPart
+        -- Переводим мировые координаты в экранные
+        local screenPosition, onScreen = camera:WorldToScreenPoint(humanoidRootPart.Position)
 
-        -- Удаление ESP при выходе игрока
-        player.CharacterRemoving:Connect(function()
-            highlight:Destroy()
-        end)
+        if onScreen then
+            -- Рисуем линию, если игрок на экране
+            local line = Instance.new("Line")
+            line.Color = getgenv().lineColor
+            line.Thickness = 2
+            line.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)  -- Центр экрана
+            line.To = Vector2.new(screenPosition.X, screenPosition.Y)  -- Позиция игрока на экране
+            line.Parent = game.CoreGui
+        end
     end
 end
 
--- Обновление ESP при заходе новых игроков
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        if ESPEnabled then
-            CreateESP(player)
-        end
-    end)
+-- Функция для включения/выключения ESP
+function toggleESP()
+    getgenv().espEnabled = not getgenv().espEnabled
+    if getgenv().espEnabled then
+        print("ESP включен")
+    else
+        print("ESP выключен")
+    end
+end
+
+-- Функция для включения/выключения линий
+function toggleLines()
+    getgenv().lineEnabled = not getgenv().lineEnabled
+    if getgenv().lineEnabled then
+        print("Линии включены")
+    else
+        print("Линии выключены")
+    end
+end
+
+-- Создание UI
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Vcsk/UI-Library/main/Source/MyUILib(Unamed).lua"))();
+local Window = Library:Create("ESP Menu")
+
+local HomeTab = Window:Tab("Settings")
+HomeTab:Section("ESP Controls")
+HomeTab:Toggle("Enable ESP", function(state)
+    getgenv().espEnabled = state
 end)
 
--- Включение/выключение ESP
-local function ToggleESP()
-    ESPEnabled = not ESPEnabled
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            if ESPEnabled then
-                CreateESP(player)
-            else
-                if player.Character:FindFirstChild("Highlight") then
-                    player.Character.Highlight:Destroy()
+HomeTab:Toggle("Enable Lines", function(state)
+    getgenv().lineEnabled = state
+end)
+
+HomeTab:Keybind("Toggle ESP", Enum.KeyCode.F, function()
+    toggleESP()
+end)
+
+HomeTab:Keybind("Toggle Lines", Enum.KeyCode.G, function()
+    toggleLines()
+end)
+
+-- Создаем ESP для всех игроков
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    -- Игнорируем локального игрока
+    if player ~= game.Players.LocalPlayer then
+        -- Периодически проверяем игроков, если ESP включен
+        game:GetService("RunService").RenderStepped:Connect(function()
+            if getgenv().espEnabled then
+                if getgenv().lineEnabled then
+                    drawLineToPlayer(player)
                 end
             end
-        end
-    end
-end
-
--- Создание UI кнопки для включения/выключения ESP
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Button = Instance.new("TextButton", ScreenGui)
-
-Button.Size = UDim2.new(0, 100, 0, 50)
-Button.Position = UDim2.new(0.8, 0, 0.1, 0)
-Button.Text = "Toggle ESP"
-Button.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-Button.MouseButton1Click:Connect(ToggleESP)
-
--- Назначение горячей клавиши (F) для включения/выключения ESP
-UserInputService.InputBegan:Connect(function(input, processed)
-    if input.KeyCode == Enum.KeyCode.F and not processed then
-        ToggleESP()
+        end)
     end
 end)
-
-             
