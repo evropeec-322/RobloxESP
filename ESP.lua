@@ -1,68 +1,50 @@
-local Players =
-game:GetService("Players")
-local RunService =
-game:GetService("RunService")
-local UserInputService =
-game:GetService("UserInputService")
-local LocalPlayer =
-Players.LocalPlayer
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
 local ESPEnabled = false
 
---Функция для Создания ESP
-local function CreateESP(player) 
-    if player ~= LocalPlayer and
-player.Character then 
-        local highlight =false
-Instance.new("Highlight")
-        highlight.Parent =
-player=Character
-        highlight.FillColor =
-Color3.fromRGB(255, 0, 0) 
-        highlight.OutlineColor =
-Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency
-= 0.5
+-- Функция для создания ESP
+local function CreateESP(player)
+    if player ~= LocalPlayer and player.Character then
+        local highlight = Instance.new("Highlight")
+        highlight.Parent = player.Character
+        highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Красный цвет
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Белая обводка
+        highlight.FillTransparency = 0.5
+        highlight.OutlineTransparency = 0
 
-highlight.OutlineTransparency = 0
-
--- Удаление ESP ПРИ ВЫХОДЕ ИГРОКА
-
-player.CharacterRemoving:Connect(function()
+        -- Удаление ESP при выходе игрока
+        player.CharacterRemoving:Connect(function()
             highlight:Destroy()
         end)
     end
 end
 
---Обновление ESP
+-- Обновление ESP при заходе новых игроков
 Players.PlayerAdded:Connect(function(player)
-
-player.CharacterAdded:Connect(function()
-        if ESPEnabled then 
+    player.CharacterAdded:Connect(function()
+        if ESPEnabled then
             CreateESP(player)
         end
     end)
-end) 
+end)
 
--Включение/Выключение
+-- Включение/выключение ESP
 local function ToggleESP()
     ESPEnabled = not ESPEnabled
-    for _, player in 
-    pairs(Players:GetPlayers()) 
-            if player ~=Local player
-and Player.Character then
-            if ESPEnabled then 
-                CreateESP
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            if ESPEnabled then
+                CreateESP(player)
             else
-                if 
-player.Character:FinFirstChild("Highlight")
-then
-  
-player.Character.Highlight:Destroy()
+                if player.Character:FindFirstChild("Highlight") then
+                    player.Character.Highlight:Destroy()
                 end
             end
-        end 
-    end 
-end 
+        end
+    end
+end
 
 -- Создание UI кнопки для включения/выключения ESP
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -81,13 +63,5 @@ UserInputService.InputBegan:Connect(function(input, processed)
         ToggleESP()
     end
 end)
-
-
----
-
-
-
-
-
 
              
