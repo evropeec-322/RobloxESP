@@ -1,7 +1,8 @@
 -- // ESP Settings
-getgenv().ESPEnabled = true -- Можно переключать кнопкой
-getgenv().ESPColor = Color3.fromRGB(255, 0, 0) -- Красный цвет ESP
+getgenv().ESPEnabled = true -- Можно включать/выключать кнопкой F
+getgenv().ESPColor = Color3.fromRGB(255, 0, 0) -- Красный цвет линий
 getgenv().ESPThickness = 2 -- Толщина линий
+getgenv().ESPTransparency = 1 -- Прозрачность линий
 
 -- // UI Toggle
 local UserInputService = game:GetService("UserInputService")
@@ -10,7 +11,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         getgenv().ESPEnabled = not getgenv().ESPEnabled
         if not getgenv().ESPEnabled then
             for _, v in pairs(game.CoreGui:GetChildren()) do
-                if v.Name == "ESPBox" then
+                if v.Name == "ESPLine" then
                     v:Destroy()
                 end
             end
@@ -21,25 +22,27 @@ end)
 -- // ESP Function
 function CreateESP(player)
     if player == game.Players.LocalPlayer then return end -- Не показываем ESP на себе
-    local box = Drawing.new("Square")
-    box.Visible = false
-    box.Color = getgenv().ESPColor
-    box.Thickness = getgenv().ESPThickness
-    box.Filled = false
+    local line = Drawing.new("Line")
+    line.Visible = false
+    line.Color = getgenv().ESPColor
+    line.Thickness = getgenv().ESPThickness
+    line.Transparency = getgenv().ESPTransparency
 
     local function Update()
         game:GetService("RunService").RenderStepped:Connect(function()
             if getgenv().ESPEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local pos, onScreen = game.Workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                local rootPos, onScreen = game.Workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                local startPos = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
+
                 if onScreen then
-                    box.Size = Vector2.new(50, 100)
-                    box.Position = Vector2.new(pos.X - 25, pos.Y - 50)
-                    box.Visible = true
+                    line.From = startPos
+                    line.To = Vector2.new(rootPos.X, rootPos.Y)
+                    line.Visible = true
                 else
-                    box.Visible = false
+                    line.Visible = false
                 end
             else
-                box.Visible = false
+                line.Visible = false
             end
         end)
     end
