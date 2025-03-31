@@ -1,62 +1,65 @@
--- // ESP Settings
-getgenv().ESPEnabled = true -- Можно включать/выключать кнопкой F
-getgenv().ESPColor = Color3.fromRGB(255, 0, 0) -- Красный цвет линий
-getgenv().ESPThickness = 2 -- Толщина линий
-getgenv().ESPTransparency = 1 -- Прозрачность линий
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ESPEnabled = false
 
--- // UI Toggle
-local UserInputService = game:GetService("UserInputService")
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.F then -- Нажатие F включает/выключает ESP
-        getgenv().ESPEnabled = not getgenv().ESPEnabled
-        if not getgenv().ESPEnabled then
-            for _, v in pairs(game.CoreGui:GetChildren()) do
-                if v.Name == "ESPLine" then
-                    v:Destroy()
+-- Создаем UI для включения/выключения ESP
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0, 100, 0, 50)
+ToggleButton.Position = UDim2.new(0, 10, 0, 10)
+ToggleButton.Text = "Toggle ESP"
+ToggleButton.Parent = ScreenGui
+ToggleButton.MouseButton1Click:Connect(function()
+    ESPEnabled = not ESPEnabled
+    ToggleButton.Text = ESPEnabled and "ESP ON" or "ESP OFF"
+end)
+
+-- Функция для создания ESP
+local function CreateESP(player)
+    if player == LocalPlayer then return end
+    
+    local character = player.Character
+    if not character then return end
+    
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = character
+    highlight.Adornee = character
+    highlight.FillColor = Color3.new(1, 0, 0)
+    highlight.OutlineColor = Color3.new(1, 1, 1)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineTransparency = 0
+    
+    return highlight
+end
+
+-- Обновление ESP
+local function UpdateESP()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local esp = player.Character:FindFirstChildOfClass("Highlight")
+            if ESPEnabled then
+                if not esp then
+                    CreateESP(player)
+                end
+            else
+                if esp then
+                    esp:Destroy()
                 end
             end
         end
     end
-end)
-
--- // ESP Function
-function CreateESP(player)
-    if player == game.Players.LocalPlayer then return end -- Не показываем ESP на себе
-    local line = Drawing.new("Line")
-    line.Visible = false
-    line.Color = getgenv().ESPColor
-    line.Thickness = getgenv().ESPThickness
-    line.Transparency = getgenv().ESPTransparency
-
-    local function Update()
-        game:GetService("RunService").RenderStepped:Connect(function()
-            if getgenv().ESPEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                local rootPos, onScreen = game.Workspace.CurrentCamera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
-                local startPos = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y)
-
-                if onScreen then
-                    line.From = startPos
-                    line.To = Vector2.new(rootPos.X, rootPos.Y)
-                    line.Visible = true
-                else
-                    line.Visible = false
-                end
-            else
-                line.Visible = false
-            end
-        end)
-    end
-    Update()
 end
 
--- // Apply ESP to all players
-for _, player in pairs(game.Players:GetPlayers()) do
-    CreateESP(player)
-end
+RunService.RenderStepped:Connect(UpdateESP)
 
--- // Update ESP when players join
-game.Players.PlayerAdded:Connect(function(player)
-    CreateESP(player)
+-- Обновление ESP при появлении новых игроков
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        if ESPEnabled then
+            CreateESP(player)
+        end
+    end)
 end)
-
-print("ESP Script Loaded! Press 'F' to toggle ESP on/off.")
